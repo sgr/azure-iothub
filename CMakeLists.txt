@@ -74,6 +74,13 @@ target_link_libraries(${PROJECT_NAME} INTERFACE
   uuid
   )
 
+set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "iothub.hpp")
+INSTALL(TARGETS ${PROJECT_NAME}
+  INCLUDES DESTINATION include
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  PUBLIC_HEADER  DESTINATION include/azure)
+
 ## test
 set(TEST_NAME azure_iothub_test)
 add_executable(${TEST_NAME} iothub_test.cpp)
