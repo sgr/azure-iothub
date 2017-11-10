@@ -86,7 +86,7 @@ elseif (${AZURE_IOT_PROTOCOL} STREQUAL http)
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_http_transport.a
-    COMMAND echo -e \"create ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
+    COMMAND echo -e \"\\ncreate ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
     COMMAND rm ${TMPLIBFILE})
 elseif (DEFINED ${AZURE_IOT_PROTOCOL}) # いずれでもないものが含まれている
   message(FATAL_ERROR "invalid protocol")
