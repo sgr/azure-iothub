@@ -22,8 +22,9 @@ endif ()
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb -gstabs ${CMAKE_CXX_FLAGS_DEBUG}")
 
 set(DEPEND_LIB_ROOT ${PROJECT_BINARY_DIR}/dep)
-link_directories(${DEPEND_LIB_ROOT}/lib)
-link_directories(${DEPEND_LIB_ROOT}/lib64)
+#link_directories(${PROJECT_BINARY_DIR})
+include(GNUInstallDirs)
+link_directories(${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR})
 
 add_library(${PROJECT_NAME} STATIC iothub.cpp)
 
@@ -47,32 +48,64 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${DEPEND_LIB_ROOT}/src/azure-
 
 add_dependencies(${PROJECT_NAME} azure-iot-sdk-c)
 
+# 以下で行う依存ライブラリ結合の準備
+set(LIBFILE ${PROJECT_BINARY_DIR}/libazure_iothub.a)
+set(TMPLIBFILE ${PROJECT_BINARY_DIR}/libazure_iothub_tmp.a)
+
 if (${AZURE_IOT_PROTOCOL} STREQUAL amqp)
-  target_link_libraries(${PROJECT_NAME} INTERFACE
-    iothub_client_amqp_transport
-    iothub_client_amqp_ws_transport
-    uamqp)
   add_definitions(-DAZURE_IOT_AMQP)
+  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND mv ${LIBFILE} ${TMPLIBFILE}
+    COMMAND ${CMAKE_AR} cqT ${LIBFILE}
+    ${TMPLIBFILE}
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_amqp_transport.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_amqp_ws_transport.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libuamqp.a
+    COMMAND echo -e \"create ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
+    COMMAND rm ${TMPLIBFILE})
 elseif (${AZURE_IOT_PROTOCOL} STREQUAL mqtt)
-  target_link_libraries(${PROJECT_NAME} INTERFACE
-    iothub_client_mqtt_transport
-    iothub_client_mqtt_ws_transport
-    umqtt)
   add_definitions(-DAZURE_IOT_MQTT)
+  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND mv ${LIBFILE} ${TMPLIBFILE}
+    COMMAND ${CMAKE_AR} cqT ${LIBFILE}
+    ${TMPLIBFILE}
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_mqtt_transport.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_mqtt_ws_transport.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libumqtt.a
+    COMMAND echo -e \"create ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
+    COMMAND rm ${TMPLIBFILE})
 elseif (${AZURE_IOT_PROTOCOL} STREQUAL http)
-  target_link_libraries(${PROJECT_NAME} INTERFACE iothub_client_http_transport)
+  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND mv ${LIBFILE} ${TMPLIBFILE}
+    COMMAND ${CMAKE_AR} cqT ${LIBFILE}
+    ${TMPLIBFILE}
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
+    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_http_transport.a
+    COMMAND echo -e \"create ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
+    COMMAND rm ${TMPLIBFILE})
 elseif (DEFINED ${AZURE_IOT_PROTOCOL}) # いずれでもないものが含まれている
   message(FATAL_ERROR "invalid protocol")
 endif()
 
+
 target_link_libraries(${PROJECT_NAME} INTERFACE
-  iothub_client
-  aziotsharedutil
   ssl
   crypto
   curl
   uuid
   )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "iothub.hpp")
+INSTALL(TARGETS ${PROJECT_NAME}
+  INCLUDES DESTINATION include
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  PUBLIC_HEADER  DESTINATION include/azure)
 
 ## test
 set(TEST_NAME azure_iothub_test)
@@ -97,5 +130,5 @@ target_include_directories(${TEST_NAME} PUBLIC
   ${DEPEND_LIB_ROOT}/include
   )
 
-add_dependencies(${TEST_NAME} argagg)
-target_link_libraries(${TEST_NAME} ${PROJECT_NAME} pthread)
+add_dependencies(${TEST_NAME} argagg ${PROJECT_NAME})
+target_link_libraries(${TEST_NAME} pthread ${PROJECT_NAME})
