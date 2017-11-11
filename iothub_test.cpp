@@ -50,8 +50,8 @@ int main(int argc, char* argv[]) {
   prop["true_age"] = "40";
 
   try {
-    hub.send(prop, data_str);
-    hub.send(prop, data);
+    hub.send(prop, data_str, [data_str]() { std::cerr << "FAILED TO SEND STR: " << *data_str << std::endl; });
+    hub.send(prop, data, [data]() { std::cerr << "FAILED TO SEND DATA: " << std::to_string(data->size()) << std::endl; });
     return EXIT_SUCCESS;
   } catch(...) {
     try {

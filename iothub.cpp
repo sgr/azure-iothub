@@ -56,8 +56,11 @@ namespace aziot {
 struct send_order {
   int64_t key;
   IOTHUB_MESSAGE_HANDLE msg_hdl;
-  std::function< void() > fallback = nullptr;
-  std::function< void() > finally = nullptr;
+  std::function< void() > fallback;
+  std::function< void() > finally;
+  send_order(const int64_t key, const IOTHUB_MESSAGE_HANDLE msg_hdl, std::function< void() >&& fallback, std::function< void() >&& finally) :
+      key(key), msg_hdl(msg_hdl), fallback(fallback), finally(finally) {}
+  ~send_order() {}
 };
 
 class iothub::impl {
@@ -131,6 +134,7 @@ extern "C" {
     }
 
     o->finally();
+    delete o;
   }
 }
 
@@ -258,17 +262,13 @@ void aziot::iothub::impl::run() {
 
 void aziot::iothub::impl::send(IOTHUB_MESSAGE_HANDLE msg_hdl, std::function< void() >&& fallback) {
   int64_t now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-  send_order* o = new send_order;
-  o->key = now;
-  o->msg_hdl = msg_hdl;
-  o->fallback = fallback;
-  o->finally = [this, now]() {
-    {
-      std::lock_guard< std::mutex > lock(this->_mtx);
-      this->_order.erase(now);
-    }
-    this->_cond.notify_one();
-  };
+  send_order* o = new send_order(now, msg_hdl, std::move(fallback), [this, now]() {
+      {
+        std::lock_guard< std::mutex > lock(this->_mtx);
+        this->_order.erase(now);
+      }
+      this->_cond.notify_one();
+    });
 
   {
     std::lock_guard< std::mutex > lock(_mtx);
@@ -318,20 +318,10 @@ aziot::iothub::iothub(const std::string connection_string) :
 aziot::iothub::~iothub() {
 }
 
-void aziot::iothub::send(std::map< std::string, std::string > prop, std::shared_ptr< std::vector< uint8_t > > data) {
-  return _impl->send(prop, data, [this, data]() {
-      if (this->send_bytes_fallback) {
-        aziot::iothub::log(aziot::loglevel::error, "CALL send_fallback");
-        this->send_bytes_fallback(data).get();
-      }
-    });
+void aziot::iothub::send(std::map< std::string, std::string > prop, std::shared_ptr< std::vector< uint8_t > > data, std::function< void() >&& fallback) {
+  return _impl->send(prop, data, std::move(fallback));
 }
 
-void aziot::iothub::send(std::map< std::string, std::string > prop, std::shared_ptr< std::string > str) {
-  return _impl->send(prop, str, [this, str]() {
-      if (this->send_string_fallback) {
-        aziot::iothub::log(aziot::loglevel::error, "CALL send_fallback");
-        this->send_string_fallback(str).get();
-      }
-    });
+void aziot::iothub::send(std::map< std::string, std::string > prop, std::shared_ptr< std::string > str, std::function< void() >&& fallback) {
+  return _impl->send(prop, str, std::move(fallback));
 }
