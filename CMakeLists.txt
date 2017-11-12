@@ -20,6 +20,7 @@ else ()
 endif ()
 
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb -gstabs ${CMAKE_CXX_FLAGS_DEBUG}")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(DEPEND_LIB_ROOT ${PROJECT_BINARY_DIR}/dep)
 #link_directories(${PROJECT_BINARY_DIR})
