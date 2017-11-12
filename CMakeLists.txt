@@ -56,9 +56,8 @@ if (${AZURE_IOT_PROTOCOL} STREQUAL amqp)
   add_definitions(-DAZURE_IOT_AMQP)
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND mv ${LIBFILE} ${TMPLIBFILE}
-    COMMAND ${CMAKE_AR} cqT ${LIBFILE}
+    COMMAND ${CMAKE_AR} crT ${LIBFILE}
     ${TMPLIBFILE}
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_amqp_transport.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_amqp_ws_transport.a
@@ -69,9 +68,8 @@ elseif (${AZURE_IOT_PROTOCOL} STREQUAL mqtt)
   add_definitions(-DAZURE_IOT_MQTT)
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND mv ${LIBFILE} ${TMPLIBFILE}
-    COMMAND ${CMAKE_AR} cqT ${LIBFILE}
+    COMMAND ${CMAKE_AR} crT ${LIBFILE}
     ${TMPLIBFILE}
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_mqtt_transport.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_mqtt_ws_transport.a
@@ -81,9 +79,8 @@ elseif (${AZURE_IOT_PROTOCOL} STREQUAL mqtt)
 elseif (${AZURE_IOT_PROTOCOL} STREQUAL http)
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND mv ${LIBFILE} ${TMPLIBFILE}
-    COMMAND ${CMAKE_AR} cqT ${LIBFILE}
+    COMMAND ${CMAKE_AR} crT ${LIBFILE}
     ${TMPLIBFILE}
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_http_transport.a
     COMMAND echo -e \"\\ncreate ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
