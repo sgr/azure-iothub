@@ -3,7 +3,6 @@
 #define AZURE_IOTHUB_H
 
 #include <functional>
-#include <future>
 #include <map>
 #include <memory>
 #include <string>
