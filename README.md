@@ -26,5 +26,4 @@ A tiny c++ wrapper for [azure-iot-sdk-c](https://github.com/Azure/azure-iot-sdk-
 
 ## Known Issues
 
-* CentOS では azure-iot-sdk-c のビルドはサブモジュールのクローンが出来ずに失敗する。失敗後手動で `git submodule update --init --recursive` などとして make をやり直す必要がある。
 * azure-iot-sdk-c は libcurl を必要とするが、CentOS 7 標準パッケージは OpenSSL を使っていないため、HTTP接続の場合初期化で Segmentation Fault を起こす。curl のソースコードから --with-ssl つきでビルドし、 LD_LIBRARY_PATH を編集してビルドしたライブラリを読み込ませる必要がある。
