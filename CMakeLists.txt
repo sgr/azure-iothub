@@ -38,14 +38,27 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 include(ExternalProject)
 
-ExternalProject_Add(azure-iot-sdk-c
-  # サブモジュールの取得に失敗することがある
-  GIT_REPOSITORY https://github.com/Azure/azure-iot-sdk-c
-  GIT_TAG lts_07_2017
-  INSTALL_DIR ${DEPEND_LIB_ROOT}
-  SOURCE_DIR ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPEND_LIB_ROOT}
-  )
+#### azure-iot-sdk
+set(AZIOT_REPO https://github.com/Azure/azure-iot-sdk-c)
+set(AZIOT_TAG lts_07_2017)
+set(AZIOT_SRC ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c)
+# サブモジュールの再帰的取得は古いCMakeでは行ってくれない
+if (CMAKE_VERSION VERSION_LESS "3.0")
+  ExternalProject_Add(azure-iot-sdk-c
+    GIT_REPOSITORY ${AZIOT_REPO}
+    GIT_TAG ${AZIOT_TAG}
+    UPDATE_COMMAND git submodule update --init --recursive
+    INSTALL_DIR ${DEPEND_LIB_ROOT}
+    SOURCE_DIR ${AZIOT_SRC}
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPEND_LIB_ROOT})
+else()
+  ExternalProject_Add(azure-iot-sdk-c
+    GIT_REPOSITORY ${AZIOT_REPO}
+    GIT_TAG ${AZIOT_TAG}
+    INSTALL_DIR ${DEPEND_LIB_ROOT}
+    SOURCE_DIR ${AZIOT_SRC}
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPEND_LIB_ROOT})
+endif()
 # cert.c コンパイル用
 target_include_directories(${PROJECT_NAME} PRIVATE ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c/certs)
 
