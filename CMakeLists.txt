@@ -8,6 +8,8 @@ if (NOT DEFINED AZURE_IOT_PROTOCOL)
   set(AZURE_IOT_PROTOCOL http)
 endif ()
 
+option(with_test "Build with test program" OFF)
+
 #### c++11
 if (CMAKE_VERSION VERSION_LESS "3.1")
   if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -106,27 +108,29 @@ INSTALL(TARGETS ${PROJECT_NAME}
   PUBLIC_HEADER  DESTINATION include/azure)
 
 ## test
-set(TEST_NAME azure_iothub_test)
-add_executable(${TEST_NAME} iothub_test.cpp)
-# add_test(
-#   NAME ${TEST_NAME}
-#   COMMAND $<TARGET_FILE:${TEST_NAME}>
-#   CONFIGURATIONS Debug
-#   )
+if (${with_test})
+  set(TEST_NAME azure_iothub_test)
+  add_executable(${TEST_NAME} iothub_test.cpp)
+  # add_test(
+  #   NAME ${TEST_NAME}
+  #   COMMAND $<TARGET_FILE:${TEST_NAME}>
+  #   CONFIGURATIONS Debug
+  #   )
 
-ExternalProject_Add(argagg
-  GIT_REPOSITORY https://github.com/vietjtnguyen/argagg
-  GIT_TAG 0.4.6
-  INSTALL_DIR ${DEPEND_LIB_ROOT}
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPEND_LIB_ROOT}
-  )
+  ExternalProject_Add(argagg
+    GIT_REPOSITORY https://github.com/vietjtnguyen/argagg
+    GIT_TAG 0.4.6
+    INSTALL_DIR ${DEPEND_LIB_ROOT}
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPEND_LIB_ROOT}
+    )
 
-target_include_directories(${TEST_NAME} PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/..
-  ${CMAKE_SOURCE_DIR}/common
-  ${DEPEND_LIB_ROOT}/include
-  )
+  target_include_directories(${TEST_NAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_SOURCE_DIR}/common
+    ${DEPEND_LIB_ROOT}/include
+    )
 
-add_dependencies(${TEST_NAME} argagg ${PROJECT_NAME})
-target_link_libraries(${TEST_NAME} pthread ${PROJECT_NAME})
+  add_dependencies(${TEST_NAME} argagg ${PROJECT_NAME})
+  target_link_libraries(${TEST_NAME} pthread ${PROJECT_NAME})
+endif()
