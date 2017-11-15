@@ -136,6 +136,16 @@ extern "C" {
     o->finally();
     delete o;
   }
+
+  IOTHUBMESSAGE_DISPOSITION_RESULT message_callback(IOTHUB_MESSAGE_HANDLE message, void* userContextCallback) {
+    return IOTHUBMESSAGE_ACCEPTED;
+  };
+
+  void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result, IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason, void* userContextCallback) {
+    std::string msg("CONNECTION STATUS: ");
+    msg += std::to_string(result) + "(" + std::to_string(reason) + ")";
+    aziot::iothub::log(aziot::loglevel::debug, msg);
+  };
 }
 
 std::function< void(const aziot::loglevel level, const std::string& msg) > aziot::iothub::log = [](const aziot::loglevel level, const std::string& msg) {
@@ -205,22 +215,13 @@ aziot::iothub::impl::impl(const std::string connection_string) : _connection_str
     throw std::runtime_error("FAILED TO SET OPTION \"messageTimeout\"");
   }
 
-  /* Setting Message call back, so we can receive Commands. */
-  auto mc = [&] (IOTHUB_MESSAGE_HANDLE message, void* userContextCallback) {
-    return IOTHUBMESSAGE_ACCEPTED;
-  };
-  if (IoTHubClient_LL_SetMessageCallback(_iothub_client_handle, mc, NULL) == IOTHUB_CLIENT_OK) {
+  if (IoTHubClient_LL_SetMessageCallback(_iothub_client_handle, message_callback, NULL) == IOTHUB_CLIENT_OK) {
     aziot::iothub::log(aziot::loglevel::trace, "SUCCESS: IoTHubClient_LL_SetMessageCallback");
   } else {
     throw std::runtime_error("FAILED IoTHubClient_LL_SetMessageCallback");
   }
 
-  auto csc = [&] (IOTHUB_CLIENT_CONNECTION_STATUS result, IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason, void* userContextCallback) {
-    std::string msg("CONNECTION STATUS: ");
-    msg += std::to_string(result) + "(" + std::to_string(reason) + ")";
-    aziot::iothub::log(aziot::loglevel::debug, msg);
-  };
-  if (IoTHubClient_LL_SetConnectionStatusCallback(_iothub_client_handle, csc, NULL) == IOTHUB_CLIENT_OK) {
+  if (IoTHubClient_LL_SetConnectionStatusCallback(_iothub_client_handle, connection_status_callback, NULL) == IOTHUB_CLIENT_OK) {
     aziot::iothub::log(aziot::loglevel::trace, "SUCCESS: IoTHubClient_LL_SetConnectionStatusCallback");
   } else {
     throw std::runtime_error("FAILED IoTHubClient_LL_SetConnectionStatusCallback");
