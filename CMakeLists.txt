@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.8.12)
 project (azure_iothub)
+set(VER_MAJOR 1)
+set(VER_MINOR 0)
+set(VER_REVISION 0)
+set(VERSION ${VER_MAJOR}.${VER_MINOR}.${VER_REVISION})
 
 # AZURE_IOT_PROTOCOL がセットされていなければ HTTP を用いる
 
@@ -29,12 +33,19 @@ set(DEPEND_LIB_ROOT ${PROJECT_BINARY_DIR}/dep)
 include(GNUInstallDirs)
 link_directories(${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR})
 
-add_library(${PROJECT_NAME} STATIC iothub.cpp)
+add_library(${PROJECT_NAME}_amqp SHARED iothub_amqp.cpp)
+add_library(${PROJECT_NAME}_mqtt SHARED iothub_mqtt.cpp)
+add_library(${PROJECT_NAME}_http SHARED iothub_http.cpp)
 
-target_include_directories(${PROJECT_NAME} PUBLIC
+target_include_directories(${PROJECT_NAME}_amqp PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${DEPEND_LIB_ROOT}/include
-  )
+  ${DEPEND_LIB_ROOT}/include)
+target_include_directories(${PROJECT_NAME}_mqtt PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${DEPEND_LIB_ROOT}/include)
+target_include_directories(${PROJECT_NAME}_http PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${DEPEND_LIB_ROOT}/include)
 
 include(ExternalProject)
 
@@ -59,66 +70,39 @@ else()
     SOURCE_DIR ${AZIOT_SRC}
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPEND_LIB_ROOT})
 endif()
+
 # cert.c コンパイル用
-target_include_directories(${PROJECT_NAME} PRIVATE ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c/certs)
+target_include_directories(${PROJECT_NAME}_amqp PRIVATE ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c/certs)
+target_include_directories(${PROJECT_NAME}_mqtt PRIVATE ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c/certs)
+target_include_directories(${PROJECT_NAME}_http PRIVATE ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c/certs)
 
-add_dependencies(${PROJECT_NAME} azure-iot-sdk-c)
+add_dependencies(${PROJECT_NAME}_amqp azure-iot-sdk-c)
+add_dependencies(${PROJECT_NAME}_mqtt azure-iot-sdk-c)
+add_dependencies(${PROJECT_NAME}_http azure-iot-sdk-c)
 
-# 以下で行う依存ライブラリ結合の準備
-set(LIBFILE ${PROJECT_BINARY_DIR}/libazure_iothub.a)
-set(TMPLIBFILE ${PROJECT_BINARY_DIR}/libazure_iothub_tmp.a)
+target_link_libraries(${PROJECT_NAME}_amqp INTERFACE
+  ssl crypto curl uuid
+  aziotsharedutil iothub_client_amqp_transport iothub_client_amqp_ws_transport uamqp)
+target_link_libraries(${PROJECT_NAME}_mqtt INTERFACE
+  ssl crypto curl uuid
+  aziotsharedutil iothub_client_mqtt_transport iothub_client_mqtt_ws_transport umqtt)
+target_link_libraries(${PROJECT_NAME}_http INTERFACE
+  ssl crypto curl uuid
+  aziotsharedutil iothub_client_http_transport)
 
-if (${AZURE_IOT_PROTOCOL} STREQUAL amqp)
-  add_definitions(-DAZURE_IOT_AMQP)
-  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND mv ${LIBFILE} ${TMPLIBFILE}
-    COMMAND ${CMAKE_AR} crT ${LIBFILE}
-    ${TMPLIBFILE}
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_amqp_transport.a
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_amqp_ws_transport.a
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libuamqp.a
-    COMMAND echo -e \"create ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
-    COMMAND rm ${TMPLIBFILE})
-elseif (${AZURE_IOT_PROTOCOL} STREQUAL mqtt)
-  add_definitions(-DAZURE_IOT_MQTT)
-  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND mv ${LIBFILE} ${TMPLIBFILE}
-    COMMAND ${CMAKE_AR} crT ${LIBFILE}
-    ${TMPLIBFILE}
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_mqtt_transport.a
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_mqtt_ws_transport.a
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libumqtt.a
-    COMMAND echo -e \"create ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
-    COMMAND rm ${TMPLIBFILE})
-elseif (${AZURE_IOT_PROTOCOL} STREQUAL http)
-  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND mv ${LIBFILE} ${TMPLIBFILE}
-    COMMAND ${CMAKE_AR} crT ${LIBFILE}
-    ${TMPLIBFILE}
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libaziotsharedutil.a
-    ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_http_transport.a
-    COMMAND echo -e \"\\ncreate ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
-    COMMAND rm ${TMPLIBFILE})
-elseif (DEFINED ${AZURE_IOT_PROTOCOL}) # いずれでもないものが含まれている
-  message(FATAL_ERROR "invalid protocol")
-endif()
+set_target_properties(${PROJECT_NAME}_amqp PROPERTIES
+  PUBLIC_HEADER "iothub.hpp" VERSION ${VERSION} SOVERSION ${VER_MAJOR})
+set_target_properties(${PROJECT_NAME}_mqtt PROPERTIES
+  VERSION ${VERSION} SOVERSION ${VER_MAJOR})
+set_target_properties(${PROJECT_NAME}_http PROPERTIES
+  VERSION ${VERSION} SOVERSION ${VER_MAJOR})
 
-
-target_link_libraries(${PROJECT_NAME} INTERFACE
-  ssl
-  crypto
-  curl
-  uuid
-  )
-
-set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "iothub.hpp")
-INSTALL(TARGETS ${PROJECT_NAME}
-  INCLUDES DESTINATION include
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  PUBLIC_HEADER  DESTINATION include/azure)
+#### installation
+install(TARGETS ${PROJECT_NAME}_amqp
+ LIBRARY DESTINATION lib
+ PUBLIC_HEADER  DESTINATION include/azure)
+install(TARGETS ${PROJECT_NAME}_mqtt LIBRARY DESTINATION lib)
+install(TARGETS ${PROJECT_NAME}_http LIBRARY DESTINATION lib)
 
 ## test
 if (${with_test})
@@ -144,6 +128,6 @@ if (${with_test})
     ${DEPEND_LIB_ROOT}/include
     )
 
-  add_dependencies(${TEST_NAME} argagg ${PROJECT_NAME})
+  add_dependencies(${TEST_NAME} argagg ${PROJECT_NAME}_amqp)
   target_link_libraries(${TEST_NAME} pthread ${PROJECT_NAME})
 endif()
