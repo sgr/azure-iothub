@@ -39,8 +39,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 include(ExternalProject)
 
 #### azure-iot-sdk
-set(AZIOT_REPO https://github.com/Azure/azure-iot-sdk-c)
-set(AZIOT_TAG lts_07_2017)
+set(AZIOT_REPO https://github.com/sgr/azure-iot-sdk-c)
+set(AZIOT_TAG test-2018-01-12)
 set(AZIOT_SRC ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c)
 # サブモジュールの再帰的取得は古いCMakeでは行ってくれない
 if (CMAKE_VERSION VERSION_LESS "3.0")
@@ -78,7 +78,7 @@ if (${AZURE_IOT_PROTOCOL} STREQUAL amqp)
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_amqp_transport.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_amqp_ws_transport.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libuamqp.a
-    COMMAND echo -e \"create ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
+    COMMAND echo -e \"\\ncreate ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
     COMMAND rm ${TMPLIBFILE})
 elseif (${AZURE_IOT_PROTOCOL} STREQUAL mqtt)
   add_definitions(-DAZURE_IOT_MQTT)
@@ -90,7 +90,7 @@ elseif (${AZURE_IOT_PROTOCOL} STREQUAL mqtt)
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_mqtt_transport.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libiothub_client_mqtt_ws_transport.a
     ${DEPEND_LIB_ROOT}/${CMAKE_INSTALL_LIBDIR}/libumqtt.a
-    COMMAND echo -e \"create ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
+    COMMAND echo -e \"\\ncreate ${LIBFILE}\\naddlib ${LIBFILE}\\nsave\\nend\\n\" | ${CMAKE_AR} -M
     COMMAND rm ${TMPLIBFILE})
 elseif (${AZURE_IOT_PROTOCOL} STREQUAL http)
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
