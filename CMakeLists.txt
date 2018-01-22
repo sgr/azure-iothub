@@ -43,7 +43,7 @@ set(AZIOT_REPO https://github.com/sgr/azure-iot-sdk-c)
 set(AZIOT_TAG test-2018-01-12)
 set(AZIOT_SRC ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c)
 # サブモジュールの再帰的取得は古いCMakeでは行ってくれない
-if (CMAKE_VERSION VERSION_LESS "3.0")
+if (CMAKE_VERSION VERSION_LESS "3.6")
   ExternalProject_Add(azure-iot-sdk-c
     GIT_REPOSITORY ${AZIOT_REPO}
     GIT_TAG ${AZIOT_TAG}
