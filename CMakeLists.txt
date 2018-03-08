@@ -40,7 +40,7 @@ include(ExternalProject)
 
 #### azure-iot-sdk
 set(AZIOT_REPO https://github.com/Azure/azure-iot-sdk-c)
-set(AZIOT_TAG lts_07_2017)
+set(AZIOT_TAG lts_01_2018)
 set(AZIOT_SRC ${DEPEND_LIB_ROOT}/src/azure-iot-sdk-c)
 # サブモジュールの再帰的取得は古いCMakeでは行ってくれない
 if (CMAKE_VERSION VERSION_LESS "3.6")
